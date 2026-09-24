@@ -1,0 +1,18 @@
+{
+  "name": "designcheck-ai-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DesignCheck AI - Automatically validate your website against your Figma design",
+  "scripts": {
+    "dev:backend": "npm --prefix Backend run dev",
+    "dev:frontend": "npm --prefix Frontend run dev",
+    "dev:worker": "npm --prefix Backend run worker",
+    "seed:superadmin": "npm --prefix Backend run seed:superadmin",
+    "test": "npm --prefix Backend run test",
+    "build:frontend": "npm --prefix Frontend run build",
+    "build": "npm --prefix Frontend run build"
+  },
+  "keywords": ["qa", "figma", "visual-diff", "playwright", "gemini-ai"],
+  "author": "Priyanka Samiappan",
+  "license": "ISC"
+}

@@ -1,0 +1,27 @@
+# Node dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment secrets
+.env
+.env.local
+.env.*.local
+
+# Production builds
+dist/
+dist-ssr/
+*.local
+
+# Storage artifacts (generated diffs, screenshots, previews)
+Backend/storage/screenshots/
+Backend/storage/diffs/
+Backend/storage/references/
+Backend/storage/previews/
+
+# Editor & OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
