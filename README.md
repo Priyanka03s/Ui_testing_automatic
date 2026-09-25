@@ -76,15 +76,14 @@ NODE_ENV=development
 PORT=5000
 FRONTEND_URL=http://localhost:5173
 
-# MongoDB Connection String
-MONGODB_URI=mongodb+srv://priyanka:7871230581@cluster0.esgpaey.mongodb.net/designcheck_ai?retryWrites=true&w=majority
+MONGODB_URI=your_mongodb_connection_string
+FIGMA_ENCRYPTION_KEY=your_encryption_key
 
 # JWT Authentication
 JWT_SECRET=your_jwt_secret_key_here
 JWT_EXPIRES_IN=7d
 
-# Figma Token Encryption (32-byte hexadecimal string)
-FIGMA_ENCRYPTION_KEY=e4a7d65f8a02c89dbd1763198f2495b28394e37f29b47e2c91834e0a7f1234bc
+
 
 # Google Gemini AI Key
 GEMINI_API_KEY=your_gemini_api_key_here
