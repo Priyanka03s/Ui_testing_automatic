@@ -1,15 +1,20 @@
-import { PageMapping } from '../models/PageMapping.js';
+﻿import { PageMapping } from '../models/PageMapping.js';
 import { Project } from '../models/Project.js';
+import { FigmaConnection } from '../models/FigmaConnection.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
 
 export const createPageMapping = async (req, res, next) => {
   try {
     const projectId = req.params.id;
-    const { figmaNodeId, figmaPageName, frameName, websiteRoute, viewportWidth, viewportHeight, referenceImageUrl } = req.body;
+    let { figmaNodeId, figmaPageName, frameName, websiteRoute, viewportWidth, viewportHeight, referenceImageUrl } = req.body;
 
     const project = await Project.findOne({ _id: projectId, isDeleted: false });
     if (!project) {
       return sendError(res, 'Project not found', 404, 'PROJECT_NOT_FOUND');
+    }
+
+    if (!websiteRoute) {
+      websiteRoute = '/';
     }
 
     // Check duplicate route
@@ -18,11 +23,40 @@ export const createPageMapping = async (req, res, next) => {
       return sendError(res, `A mapping for website route "${websiteRoute}" already exists in this project`, 409, 'DUPLICATE_ROUTE');
     }
 
+    // Auto-resolve figmaNodeId if empty or not provided
+    if (!figmaNodeId || !figmaNodeId.trim()) {
+      const figmaConn = await FigmaConnection.findOne({ projectId });
+      if (figmaConn && figmaConn.importedPages?.length > 0) {
+        for (const page of figmaConn.importedPages) {
+          const matched = page.frames?.find(f => 
+            f.name.toLowerCase() === (frameName || figmaPageName || '').toLowerCase()
+          );
+          if (matched) {
+            figmaNodeId = matched.id;
+            if (!figmaPageName) figmaPageName = page.name;
+            if (!frameName) frameName = matched.name;
+            if (!referenceImageUrl) referenceImageUrl = matched.imageUrl || '';
+            break;
+          }
+        }
+        if (!figmaNodeId && figmaConn.importedPages[0]?.frames?.length > 0) {
+          const firstFrame = figmaConn.importedPages[0].frames[0];
+          figmaNodeId = firstFrame.id;
+          if (!figmaPageName) figmaPageName = figmaConn.importedPages[0].name;
+          if (!frameName) frameName = firstFrame.name;
+          if (!referenceImageUrl) referenceImageUrl = firstFrame.imageUrl || '';
+        }
+      }
+      if (!figmaNodeId || !figmaNodeId.trim()) {
+        figmaNodeId = '0:1';
+      }
+    }
+
     const mapping = await PageMapping.create({
       projectId,
-      figmaNodeId,
-      figmaPageName,
-      frameName: frameName || figmaPageName,
+      figmaNodeId: figmaNodeId || '0:1',
+      figmaPageName: figmaPageName || 'Home',
+      frameName: frameName || figmaPageName || 'Home Frame',
       websiteRoute: websiteRoute.trim(),
       viewportWidth: viewportWidth || 1440,
       viewportHeight: viewportHeight || 900,

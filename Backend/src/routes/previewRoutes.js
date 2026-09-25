@@ -1,4 +1,4 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import fs from 'fs';
 import path from 'path';
 import mime from 'mime-types';
@@ -45,7 +45,8 @@ router.get('/:previewId*', (req, res) => {
     if (fs.existsSync(absoluteTargetFile) && fs.statSync(absoluteTargetFile).isFile()) {
       const contentType = mime.lookup(absoluteTargetFile) || 'application/octet-stream';
       res.setHeader('Content-Type', contentType);
-      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+      // Allow embedding in localhost:5173 iframe
+      res.setHeader('Content-Security-Policy', "frame-ancestors 'self' http://localhost:5173 http://127.0.0.1:5173");
       return fs.createReadStream(absoluteTargetFile).pipe(res);
     }
 
@@ -53,7 +54,8 @@ router.get('/:previewId*', (req, res) => {
     const indexHtmlFile = path.join(previewDir, 'index.html');
     if (fs.existsSync(indexHtmlFile)) {
       res.setHeader('Content-Type', 'text/html; charset=UTF-8');
-      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+      // Allow embedding in localhost:5173 iframe
+      res.setHeader('Content-Security-Policy', "frame-ancestors 'self' http://localhost:5173 http://127.0.0.1:5173");
       return fs.createReadStream(indexHtmlFile).pipe(res);
     }
 
@@ -65,3 +67,4 @@ router.get('/:previewId*', (req, res) => {
 });
 
 export default router;
+

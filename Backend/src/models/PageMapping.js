@@ -10,7 +10,7 @@ const pageMappingSchema = new mongoose.Schema(
     },
     figmaNodeId: {
       type: String,
-      required: true,
+      default: '0:1',
     },
     figmaPageName: {
       type: String,
@@ -50,3 +50,4 @@ const pageMappingSchema = new mongoose.Schema(
 pageMappingSchema.index({ projectId: 1, websiteRoute: 1 });
 
 export const PageMapping = mongoose.model('PageMapping', pageMappingSchema);
+

@@ -7,16 +7,24 @@ export class FigmaService {
     if (!input || typeof input !== 'string') return null;
     const trimmed = input.trim();
 
-    // Check if it's already a clean file key (typically 22 chars alphanumeric)
-    if (/^[a-zA-Z0-9]{20,25}$/.test(trimmed)) {
+    // Check if it's already a clean file key (typically 15-40 chars alphanumeric) or demo_file
+    if (/^[a-zA-Z0-9_-]{15,40}$/.test(trimmed) || trimmed === 'demo_file') {
       return trimmed;
     }
 
     // Match Figma URLs
-    // https://www.figma.com/file/KEY/... or /design/KEY/...
-    const match = trimmed.match(/figma\.com\/(?:file|design)\/([a-zA-Z0-9]+)/);
+    // Supports /file/, /design/, /make/, /proto/, /board/
+    const match = trimmed.match(/figma\.com\/(?:[a-zA-Z0-9_-]+\/)*(?:file|design|make|proto|board)\/([a-zA-Z0-9_-]+)/i);
     if (match && match[1]) {
       return match[1];
+    }
+
+    // Fallback for any other figma.com URL containing an alphanumeric key
+    if (trimmed.includes('figma.com')) {
+      const fallback = trimmed.match(/([a-zA-Z0-9]{20,30})/);
+      if (fallback && fallback[1]) {
+        return fallback[1];
+      }
     }
 
     return null;
@@ -45,7 +53,20 @@ export class FigmaService {
       });
       return response.data;
     } catch (error) {
-      const msg = error.response?.data?.message || error.message;
+      const status = error.response?.status;
+      const data = error.response?.data;
+      const msg = data?.err || data?.message || error.message;
+
+      // Figma granular access tokens often have file scopes (file_content:read, file_metadata:read)
+      // but omit current_user:read. In that case, /v1/me returns a 403 scope error, which confirms
+      // the token is authentic and valid for reading files.
+      if (status === 403 && typeof msg === 'string' && (msg.toLowerCase().includes('scope') || msg.toLowerCase().includes('current_user:read'))) {
+        return {
+          id: 'figma-user',
+          handle: 'Figma User',
+        };
+      }
+
       throw new Error(`Figma token validation failed: ${msg}`);
     }
   }
@@ -64,7 +85,10 @@ export class FigmaService {
       });
       return response.data;
     } catch (error) {
-      const msg = error.response?.data?.message || error.message;
+      const msg = error.response?.data?.err || error.response?.data?.message || error.message;
+      if (typeof msg === 'string' && msg.includes('File type not supported')) {
+        throw new Error("Figma Make (/make/) files are code prototypes and cannot be fetched via Figma's REST API. Please provide a standard Figma Design file (/design/ or /file/) or click 'Use Demo Figma File'.");
+      }
       throw new Error(`Figma file fetch failed: ${msg}`);
     }
   }
@@ -145,53 +169,34 @@ export class FigmaService {
 
     const svg = `
       <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#0f172a" />
-            <stop offset="100%" stop-color="#1e293b" />
-          </linearGradient>
-          <linearGradient id="btnGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#3b82f6" />
-            <stop offset="100%" stop-color="#6366f1" />
-          </linearGradient>
-        </defs>
-        <rect width="${width}" height="${height}" fill="url(#bgGrad)"/>
-        
-        <!-- Navbar -->
-        <rect x="0" y="0" width="${width}" height="80" fill="#111827" fill-opacity="0.9"/>
-        <text x="80" y="48" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#ffffff">DesignCheck UI</text>
-        <text x="320" y="47" font-family="system-ui, sans-serif" font-size="15" fill="#94a3b8">Products</text>
-        <text x="420" y="47" font-family="system-ui, sans-serif" font-size="15" fill="#94a3b8">Features</text>
-        <text x="520" y="47" font-family="system-ui, sans-serif" font-size="15" fill="#94a3b8">Pricing</text>
-        
-        <!-- Hero Section -->
-        <text x="80" y="240" font-family="system-ui, sans-serif" font-size="48" font-weight="800" fill="#ffffff">${frameName || 'Figma Reference Design'}</text>
-        <text x="80" y="290" font-family="system-ui, sans-serif" font-size="18" fill="#94a3b8">Pixel-perfect automated validation platform connecting Figma to your live site.</text>
-        
-        <!-- CTA Button in reference position -->
-        <rect x="80" y="340" width="180" height="50" rx="8" fill="url(#btnGrad)"/>
-        <text x="130" y="371" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#ffffff">Get Started</text>
+        <rect width="${width}" height="${height}" fill="#1e1e1e"/>
+        <rect x="0" y="0" width="${width}" height="42" fill="#272727" fill-opacity="0.95"/>
+        <circle cx="28" cy="21" r="4" fill="#34d399"/>
+        <text x="38" y="25" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#e5e7eb">Figma Replica</text>
 
-        <!-- Product Cards Grid -->
-        <rect x="80" y="450" width="280" height="320" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1"/>
-        <rect x="80" y="450" width="280" height="180" rx="12" fill="#334155"/>
-        <text x="100" y="665" font-family="system-ui, sans-serif" font-size="18" font-weight="600" fill="#f8fafc">Component One</text>
-        <text x="100" y="695" font-family="system-ui, sans-serif" font-size="14" fill="#94a3b8">$49.00 • In Stock</text>
+        <rect x="510" y="58" width="420" height="780" fill="#000000" stroke="#2e2e2e" stroke-width="1"/>
 
-        <rect x="400" y="450" width="280" height="320" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1"/>
-        <rect x="400" y="450" width="280" height="180" rx="12" fill="#334155"/>
-        <text x="420" y="665" font-family="system-ui, sans-serif" font-size="18" font-weight="600" fill="#f8fafc">Component Two</text>
-        <text x="420" y="695" font-family="system-ui, sans-serif" font-size="14" fill="#94a3b8">$89.00 • Popular</text>
+        <rect x="542" y="94" width="52" height="52" fill="#eb1d24"/>
+        <text x="735" y="125" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="400" fill="#eb1d24">Home</text>
+        <text x="788" y="125" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="400" fill="#eb1d24">About</text>
+        <text x="840" y="125" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="400" fill="#eb1d24">Services</text>
+        <text x="900" y="125" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="400" fill="#eb1d24">Contact</text>
 
-        <rect x="720" y="450" width="280" height="320" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1"/>
-        <rect x="720" y="450" width="280" height="180" rx="12" fill="#334155"/>
-        <text x="740" y="665" font-family="system-ui, sans-serif" font-size="18" font-weight="600" fill="#f8fafc">Component Three</text>
-        <text x="740" y="695" font-family="system-ui, sans-serif" font-size="14" fill="#94a3b8">$129.00 • Featured</text>
+        <rect x="542" y="210" width="145" height="178" fill="#edd624"/>
+        <rect x="722" y="210" width="172" height="264" fill="#6b58dc"/>
 
-        <rect x="1040" y="450" width="280" height="320" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1"/>
-        <rect x="1040" y="450" width="280" height="180" rx="12" fill="#334155"/>
-        <text x="1060" y="665" font-family="system-ui, sans-serif" font-size="18" font-weight="600" fill="#f8fafc">Component Four</text>
-        <text x="1060" y="695" font-family="system-ui, sans-serif" font-size="14" fill="#94a3b8">$199.00 • Pro</text>
+        <text x="738" y="238" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#ffffff">hi im priyanka from</text>
+        <text x="738" y="257" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#ffffff">coimbatore,im a</text>
+        <text x="738" y="276" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#ffffff">software developer</text>
+        <text x="738" y="295" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#ffffff">sgfrgdtgtdgtdghrt</text>
+        <text x="738" y="314" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#ffffff">dfvdddddddddddd</text>
+        <text x="738" y="333" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#ffffff">sdfvsds</text>
+        <text x="738" y="352" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#ffffff">SDfsdfsf</text>
+        <text x="738" y="371" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#ffffff">Sdfsddddddddd</text>
+        <text x="738" y="390" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#ffffff">dsfs</text>
+
+        <rect x="552" y="688" width="335" height="84" fill="#eb1d24"/>
+        <text x="719" y="742" font-family="system-ui, -apple-system, sans-serif" font-size="32" font-weight="400" fill="#ffffff" text-anchor="middle">Contact US</text>
       </svg>
     `;
 

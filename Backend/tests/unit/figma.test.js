@@ -5,10 +5,12 @@ describe('Figma Service & Document Parsing', () => {
   it('should accurately extract Figma file keys from different URL formats', () => {
     const url1 = 'https://www.figma.com/file/abc123XYZ456/Mobile-App-Design?node-id=0%3A1';
     const url2 = 'https://www.figma.com/design/def456UVW789/E-commerce-Store';
+    const url3 = 'https://www.figma.com/make/Es81SMimEq995M4pfqWAgq/Travel-Website-Home-Page?t=7rdNreiss3w';
     const rawKey = 'abc123XYZ45678901234';
 
     expect(FigmaService.extractFileKey(url1)).toBe('abc123XYZ456');
     expect(FigmaService.extractFileKey(url2)).toBe('def456UVW789');
+    expect(FigmaService.extractFileKey(url3)).toBe('Es81SMimEq995M4pfqWAgq');
     expect(FigmaService.extractFileKey(rawKey)).toBe(rawKey);
     expect(FigmaService.extractFileKey('invalid-url')).toBe(null);
   });

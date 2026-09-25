@@ -1,4 +1,4 @@
-import fs from 'fs';
+﻿import fs from 'fs';
 import path from 'path';
 import { chromium } from 'playwright';
 import { TestRun } from '../models/TestRun.js';
@@ -125,7 +125,9 @@ export class TestRunnerWorker {
       });
 
       for (const mapping of mappings) {
-        const targetUrl = new URL(mapping.websiteRoute, website.previewUrl).toString();
+        const previewBase = website.previewUrl.endsWith('/') ? website.previewUrl : (website.previewUrl + '/');
+        const cleanRoute = (mapping.websiteRoute || '').replace(/^\/+/, '');
+        const targetUrl = new URL(cleanRoute, previewBase).toString();
         console.log(`[Worker] Visiting: ${targetUrl}`);
 
         await page.goto(targetUrl, { waitUntil: 'load', timeout: 30000 });
@@ -295,3 +297,4 @@ export class TestRunnerWorker {
     return job;
   }
 }
+

@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
@@ -29,6 +29,7 @@ app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     contentSecurityPolicy: false, // Allows flexible preview rendering
+    frameguard: false, // Allows iframe embedding from localhost:5173
   })
 );
 
@@ -103,3 +104,4 @@ app.use('/api/*', (req, res) => {
 app.use(errorHandler);
 
 export default app;
+
